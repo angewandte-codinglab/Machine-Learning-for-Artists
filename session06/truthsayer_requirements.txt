@@ -1,0 +1,11 @@
+moviepy==1.0.3 
+fer==22.4.0
+ffpyplayer==4.3.5
+matplotlib==3.5.1
+mediapipe==0.8.9.1
+mss==6.1.0
+numpy==1.22.2
+opencv_contrib_python==4.5.5.64
+scipy==1.8.0
+tensorflow==2.10.0
+cvzone==1.4.0

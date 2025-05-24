@@ -1,0 +1,6 @@
+train: /Users/ferdi/Documents/ferdi/test/Valentines Chocolates.v4-fixed-annotations.yolov11/train/images
+val: /Users/ferdi/Documents/ferdi/test/Valentines Chocolates.v4-fixed-annotations.yolov11/val/images
+
+nc: 1
+names: ['person']
+
