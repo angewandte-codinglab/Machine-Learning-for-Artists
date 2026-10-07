@@ -31,6 +31,18 @@ ls
 ```bash
 cd Desktop
 ```
+
+Move more than one directory:
+```bash
+cd Desktop/Your_Folder/
+```
+
+Tip: Use Tab to autocomplete 
+
+Move up:
+```bash
+cd ..
+```
 <br><br><br>
 
 #### mkdir stands for make directory and it will create a new directory for you. You have to pass the command the directory name parameter.
