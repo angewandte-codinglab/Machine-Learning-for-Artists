@@ -2,10 +2,10 @@
 
 For a successful completion of the course, i would need you to hand in a small ML Project. You can choose between 3 types of projects.
 
-**Deadline: 31st of July 23:59**
+**Deadline: 28th of February 23:59**
 
 My Email:
-ferdinand.doblhammer@uni-ak.ac.at
+ferdinand@doblhammer.media
 
 <br>
 
@@ -30,3 +30,18 @@ Document your results and upload them to Owncloud. After submitting your work, e
 ## Option 3: Get some other ML-Application to work
 
 Please write me an email of what your planning to do.
+
+
+# How to submit
+
+Projects should be submitted via [Email](mailto:ferdinand@doblhammer.media). If you send files, please don't use expiring links. The university provides cloud storage with the OwnCloud service.
+
+Choose one of these to submit:
+1. **Code**: Send me the code you used to run your project. If you trained your own models, please send them separately. Please include a short description on how to run the project.
+2. **Documentation**: Make a short video of the working project or include a PDF with sufficient information, so i can understand what you did.
+3. **Exhibition**: If you happen to show your work somewhere, I am also happy to check it out live 
+
+Projects don't have to be big or very detailed. The main goal is to get you working with ML, to understand it's fundamentals and to critically engage with it.
+
+
+
