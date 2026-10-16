@@ -91,6 +91,10 @@ echo > myfile.txt
 ```
 
   
+**cat** shows the contents of the file
+```bash
+cat myfile.txt
+```
 
 
 **rm** to remove the file:
@@ -114,15 +118,19 @@ git clone https://github.com/fdoblhammer/Machine-Learning-for-Artists.git
 ```
 
   
-  
+**CTRL+C** terminates a running process! This one will be especially useful when running our python scripts.
+
+**UP and DOWN** arrow keys show your last commands.
+
+**
 
 
 ## 1. Checking if Python is already installed
 
 To run an Object Detector like YOLO, we need the programming language Python.  
-YOLO (via Ultralytics) works with **Python 3.8 or newer**. For this course, aim for **Python 3.10, 3.11, or 3.12**.
+YOLO (via Ultralytics) works with **Python 3.8 or newer**. For this course, aim for **Python 3.10, 3.11, 3.12, or 3.13**.
 
-You do **not** need to make one Python the global default for your whole computer. Later we will create a *virtual environment* for the project — that is what matters.
+You do **not** need to make one Python the global default for your whole computer. Later we will create a **virtual environment** for the project — that is what matters.
 
   
 
@@ -176,7 +184,7 @@ This prints *which* Python binary your shell is using. If something later feels 
 
 ## 2. Installing Python 3.11 (Only do this if you haven't got the right version)
 
-Install **3.11** if you do not already have 3.10–3.12. It is fine to have several Python versions on one machine.
+Install **3.11** if you do not already have 3.10–3.13. It is fine to have several Python versions on one machine.
 
   
 
@@ -250,11 +258,11 @@ There is two ways of working with python: Either with or without an virtual envi
 4. Open the Terminal inside VS Code. By default you already should be at the correct folder location.
 5. Create a virtual environment
   ```bash
-    python -m venv Yolo11
+    python -m venv venv
   ```
 6. Activate the virtual environment
   ```bash
-   source ./Yolo11/bin/activate
+   source ./venv/bin/activate
   ```
    on Windows
 
@@ -293,12 +301,19 @@ Put this into your test.py file
   ```python
     print("Rage Against the Machine Learning)
   ```
-2. We use **variables** to store different kind of data
-  ```python
+2. ```python
    # Numbers
    x = 5
    x = 0.1
-  ```
+   ```
+   ```python
+   # Strings
+   name = "Ferdinand"
+   ```
+   ```python
+   # Booleans
+   active = True
+   ```
 3. **Comments** are used to make your code more readable aswell as to deactivate lines you don't need.
   ```python
    # One Line Comment
@@ -309,10 +324,29 @@ Put this into your test.py file
    Comment
    """
   ```
-4. **If/else statements** and **loops**
-  if/else
+4. **If/else statements** and **loops** 
+    <br>if/else
+    ```python
+    rage = 100
+    if rage >= 100:
+        print(rage)
+    else:
+        print("i sleep")
+    ```
+
     for loops
+    ```python
+    for i in range(500):
+        print(i)
+    ```
+
     while loops
+    ```python
+    rage = 0
+    while rage < 100:
+        print(rage)
+        rage += 5
+
 5. **Functions** make your code reusable
   ```python
     rage = 100
@@ -320,7 +354,6 @@ Put this into your test.py file
     def learning(rage):
         print(f"Learning: {rage}%")
 
-    learning(rage)
     learning(rage)
   ```
 6. **Lists** can store more than one Value
@@ -332,7 +365,6 @@ Put this into your test.py file
   ```
 7. **Dictionaries**
   ```python
-    progress = {"Rage": "Yes", "Learning": 100}
     progress = {"Rage": "Yes", "Learning": 100}
     print(progress["Rage"])
   ```
