@@ -21,7 +21,7 @@ If you haven't created a virtual environment yet, please follow the instructions
    ```
 
 
-  
+<br><br> 
   
 
 
@@ -41,6 +41,7 @@ If you haven't created a virtual environment yet, please follow the instructions
     python foldername/file.py
   ```
 
+<br>
 
 ### Python Syntax Basics
 
@@ -139,6 +140,7 @@ Put this into your test.py file
 9. If a python script stops working, but doesn't exit itself, press `CRTL + C` to stop it from the CLI
 
   
+<br>
   
 
 
@@ -147,7 +149,7 @@ Put this into your test.py file
 OpenCV is a library used mainly for real-time computer vision. We will use it to display images and videos and to do some manipulations on them.
 
   
-
+<br>
 
 ### Installation
 
@@ -157,6 +159,7 @@ In your CLI type this and press enter to install OpenCV and wait until it finish
 pip install opencv-python
 ```
 
+<br>
   
 ### Load and display in image (working with file paths)
 
@@ -181,7 +184,7 @@ pip install opencv-python
   ```
 
   
-
+<br>
 
 ### Draw Shapes
 
@@ -202,7 +205,7 @@ pip install opencv-python
   ```
 
   
-
+<br>
 
 ### Resizing Images
 
@@ -215,7 +218,7 @@ pip install opencv-python
     cv2.destroyAllWindows()
   ```
 
-  
+<br>
 
 
 ### Full Screen
@@ -235,7 +238,7 @@ pip install opencv-python
   ```
 
   
-
+<br>
 
 ### Convert the image to Grayscale
 
@@ -299,19 +302,15 @@ This chooses the first (0) video device on your computer available. Try to do so
   ```
 
   
-
+<br>
 
 ### Read an online Video Stream from [insecam.org](https://insecam.org)
 
+Replace with the actual stream URL from [insecam.org](https://insecam.org)
+
 ```python
 import cv2
-```
 
-
-
-# Replace with the actual stream URL from [insecam.org](https://insecam.org)
-
-```python
 stream_url = '[http://YOUR_STREAM_IP/mjpg/video.mjpg](http://YOUR_STREAM_IP/mjpg/video.mjpg)'
 
 cap = cv2.VideoCapture(stream_url)
@@ -332,6 +331,7 @@ cv2.destroyAllWindows()
 
 ```
 
+<br>
 
 ## 4. Installing YOLO (Yes it is called like that)
 
@@ -348,11 +348,13 @@ cv2.destroyAllWindows()
    ```
 
 
-<br><br><br>
+<br><br>
 
 ## 5.1 Run inference on webcam
 
 Create a new file and call it `webcam.py`
+
+<br>
 
 ### webcam.py code breakdown:
 
@@ -403,7 +405,7 @@ Break the loop and close the program:
 
 cam.release()
 cv2.destroyAllWindows()
-````
+```
 
 <br>
 
@@ -447,11 +449,11 @@ cv2.destroyAllWindows()
 
 **On my installation i ran into an error with numpy, that wouldn't let me start the script. If that's the case, you need to install an older version of numpy: `pip install "numpy<2"**
 
-<br><br><br>
+<br><br>
 
 ## 5.2. Inference on images
 
-#### Breakdown of the code:
+### Breakdown of the code:
 
 These are our imports – additionally to ultralytics we will import **pathlib** which gives us access to the folders on our computer. We don't need opencv here because we are not showing the inference live. 
 
@@ -491,7 +493,7 @@ for image_file in image_files:
 This should create a folder structure like `runs/detect/predict` where all your annotated images will be saved.
 
 
-<br><br><br>
+<br><br>
 
 
 ## 5.3 Inference on Video
@@ -510,7 +512,7 @@ results = model(video_file, save=True, conf=0.25)
 print("done")
 ```
 
-<br><br><br>
+<br><br>
 
 ## 5.4 Run inference on a stream from inseccam.org
 Modify your webcam script for this. It can stay mostly the same, but we'll need to use another source. Some streams don't work – they might require a login. Just choose another stream.
@@ -560,7 +562,8 @@ cam.release()
 cv2.destroyAllWindows()
 ```
 </details>
-<br><br><br>
+
+<br><br>
 
 ## 5.5 Inference on Twitch Stream
 To load a Twitch (or YouTube) videostream, we need to install another library first called `streamlink`
@@ -630,6 +633,8 @@ To load a Twitch (or YouTube) videostream, we need to install another library fi
     run_inference()
     ```
 
+<br>
+
 <details>
 <summary>Full Code</summary>
    
@@ -686,7 +691,7 @@ if __name__ == '__main__':
 ```
 </details>
 
-<br><br><br>
+<br><br>
 
 ## 5.6 Inference on Youtube Stream
 
@@ -751,7 +756,7 @@ results = model(frame, classes=[0])
 
 For YOLO11n the classes are listed [here](https://github.com/ultralytics/ultralytics/blob/main/ultralytics/cfg/datasets/coco.yaml)
 
-<br><br><br>
+<br><br>
 
 
 ## 7. The Flamish Scrollers
@@ -935,14 +940,14 @@ cv2.destroyAllWindows()
 </details>
 
 
-<br><br><br>  
+<br><br>
 
 
 
 
 ## 8. Using different models
 
-To begin, lets try out some other YOLO models from Ultralytics. They will be downloaded automatically when you start the program.
+Lets try out some other YOLO models from Ultralytics. They will be downloaded automatically when you start the program.
 
 ### Official YOLO-Weights from Ultralytics
 
@@ -961,4 +966,4 @@ model = YOLO('yolo11n-pose.pt')
 model = YOLO('yolo11n-cls.pt')
 ```
 
-<br><br><br>
+<br><br>
