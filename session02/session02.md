@@ -264,12 +264,13 @@ There is two ways of working with python: Either with or without an virtual envi
   ```bash
    source ./venv/bin/activate
   ```
+
    on Windows
+  ```bash
+  .\venv\Scripts\activate
+  ```
 
-In your Command Line Window should now have (Yolo11) prepended. This indicates you are working within the Virtual Environment. If you close your Command Line Window you will need to reactivate the environment with the command above.
-
-  
-  
+In your Command Line Window should now have (venv) prepended. This indicates you are working within the Virtual Environment. If you close your Command Line Window you will need to reactivate the environment with the command above.
 
 
 ## 4. Python Basics

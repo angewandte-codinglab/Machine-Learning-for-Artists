@@ -5,9 +5,9 @@ Supplimentary Material to my course at the University of Applied Arts Vienna
 
 ## [Session 2](/session02/session02.md)
 
-<!--
 ## [Session 3](/session03/session03.md)
 
+<!--
 ## [Session 4](/session04/session04.md)
 
 ## [Session 5](/session05/session05.md)
