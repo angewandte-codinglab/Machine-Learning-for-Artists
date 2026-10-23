@@ -130,7 +130,7 @@ Put this into your test.py file
         time.sleep(1)
   ```
     
-    The `time` library should come by default with the Python installation, but many libraries that extend Pythons functionality need to be installed first. To install a library in the venv we use the `pip install` command in the terminal.
+  The `time` library should come by default with the Python installation, but many libraries that extend Pythons functionality need to be installed first. To install a library in the venv we use the `pip install` command in the terminal.
 
   ```bash
   pip install some-library
@@ -213,7 +213,7 @@ pip install opencv-python
   ```python
     resized_image = cv2.resize(image, (300, 300))
 
-    cv2.imshow('Image', resized)
+    cv2.imshow('Image', resized_image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
   ```
@@ -227,14 +227,7 @@ pip install opencv-python
   ```python
     image = cv2.imread('your_image.jpg')
 
-    cv2.namedWindow('FullScreenWindow', cv2.WINDOW_NORMAL)
-
-    cv2.setWindowProperty('FullScreenWindow', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-
-    cv2.imshow('FullScreenWindow', image)
-
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    
   ```
 
   
@@ -311,7 +304,7 @@ Replace with the actual stream URL from [insecam.org](https://insecam.org)
 ```python
 import cv2
 
-stream_url = '[http://YOUR_STREAM_IP/mjpg/video.mjpg](http://YOUR_STREAM_IP/mjpg/video.mjpg)'
+stream_url = 'http://89.58.87.210:8081/mjpg/video.mjpg'
 
 cap = cv2.VideoCapture(stream_url)
 
@@ -321,13 +314,15 @@ while True:
         print("Failed to get stream.")
         break
 
-cv2.imshow('Inseccam.org', frame)
+    cv2.imshow('Inseccam.org', frame)
 
-if cv2.waitKey(1) & 0xFF == ord('q'):
-    break
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 
 cap.release()
 cv2.destroyAllWindows()
+
+
 
 ```
 
@@ -335,17 +330,14 @@ cv2.destroyAllWindows()
 
 ## 4. Installing YOLO (Yes it is called like that)
 
-1. Install PyTorch
-   
-   ```bash
-   pip install torch torchvision torchaudio
-    ```
 
-2. Install Ultralytics
+1. Install Ultralytics
    
    ```bash
    pip install ultralytics
    ```
+
+   This should load a lot of dependencies aswell.
 
 
 <br><br>
@@ -451,7 +443,26 @@ cv2.destroyAllWindows()
 
 <br><br>
 
-## 5.2. Inference on images
+
+## 5.2 Inference on Video
+
+Specify the path to the Video File and run the detector.
+
+```python
+from ultralytics import YOLO
+
+model = YOLO("yolo11n.pt")
+
+video_file = "videos/Barcelona opera reopens with performance for more than 2000 potted plants.mp4"
+
+results = model(video_file, save=True, conf=0.25)
+
+print("done")
+```
+
+<br><br>
+
+## 5.3. Inference on images
 
 ### Breakdown of the code:
 
@@ -492,25 +503,6 @@ for image_file in image_files:
 ```
 This should create a folder structure like `runs/detect/predict` where all your annotated images will be saved.
 
-
-<br><br>
-
-
-## 5.3 Inference on Video
-
-Specify the path to the Video File and run the detector.
-
-```python
-from ultralytics import YOLO
-
-model = YOLO("yolo11n.pt")
-
-video_file = "videos/Barcelona opera reopens with performance for more than 2000 potted plants.mp4"
-
-results = model(video_file, save=True, conf=0.25)
-
-print("done")
-```
 
 <br><br>
 
@@ -935,6 +927,73 @@ while True:
 cam.release()
 cv2.destroyAllWindows()
 
+```
+
+</details>
+
+<details>
+
+<summary>Full Code with Counter</summary>
+
+```python
+import cv2
+import time
+from ultralytics import YOLO
+
+model = YOLO('yolo11n.pt')  
+
+confidence_threshold = 0.1
+
+cam = cv2.VideoCapture(0) 
+both_visible_since = None
+message_printed = False
+
+if not cam.isOpened():
+    print("Error: Could not access the webcam.")
+    exit()
+
+while True:
+    ret, frame = cam.read()
+    if not ret:
+        print("Error: Could not read frame from webcam.")
+        break
+
+    results = model(frame, conf=confidence_threshold, classes=[0, 67], verbose=False)
+
+    #print(results)
+    #print(results[0].boxes)
+    #print(results[0].boxes.cls)
+
+    detected_classes = set()
+    if results[0].boxes is not None:
+        for item in results[0].boxes.cls:
+            detected_classes.add(int(item))
+
+    
+    if 0 in detected_classes and 67 in detected_classes:
+        if both_visible_since is None:
+            both_visible_since = time.monotonic()
+        visible_duration = time.monotonic() - both_visible_since
+        if visible_duration > 3:
+            if not message_printed:
+                print("\rstay focused (3.0 seconds)          ")
+                message_printed = True
+        else:
+            print(f"\rVisible together: {visible_duration:.1f}/3.0 seconds", end="", flush=True)
+    else:
+        if both_visible_since is not None:
+            print("\r" + " " * 50 + "\r", end="", flush=True)
+        both_visible_since = None
+        message_printed = False
+    
+    annotated_frame = results[0].plot()
+    cv2.imshow("YOLO11 Detection", annotated_frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cam.release()
+cv2.destroyAllWindows()
 ```
 
 </details>
