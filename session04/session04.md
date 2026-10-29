@@ -728,9 +728,9 @@ model = YOLO('yolo11n-cls.pt')
 <br><br>
 
 
-## 5. More Yolo Applications
+## 6. More Yolo Applications
 
-## 5.1 Blur Boxes (easy)
+## 6.1 Blur Boxes (easy)
 
 By default, blurring a detection box is supported by Ultralytics. You can find more solutions like cropping, counting etc. [here](https://docs.ultralytics.com/solutions/)
 
@@ -779,7 +779,7 @@ cv2.destroyAllWindows()  # destroy all opened windows
 
 
 
-## 5.1.1 Person Blur with yolo11-seg (intermediate)
+## 6.1.1 Person Blur with yolo11-seg (intermediate)
 
 Create a blurring effect that only works on persons (or other classes). Modify the webcam script for this.
 
@@ -930,7 +930,7 @@ cv2.destroyAllWindows()
 
 
 
-## 6. DeepFace
+## 7. DeepFace
 
 We have noticed, that a reliable detection of the face (especially in different environments/surroundings/lighting situations) is only possible with a vast amount of data. Even One-Shot systems like YOLOE fail more or less detecting the same face reliably. 
 
@@ -938,7 +938,7 @@ For face detection we can use [Deepface](https://github.com/serengil/deepface) t
 
 <br><br><br>
 
-### 6.1 Setup
+### 7.1 Setup
 
 1. Create a new folder on your computer, name it accordingly
 
@@ -956,7 +956,7 @@ For face detection we can use [Deepface](https://github.com/serengil/deepface) t
 
 <br><br><br>
     
-### 6.2 Basic Example
+### 7.2 Basic Example
 
 For this basic example we try to read out our webcam to detect on faces. The `DeepFace.analyze` can detect (problematically) emotion, age, gender and race. 
 
@@ -1097,7 +1097,7 @@ cv2.destroyAllWindows()
 
 <br><br><br>
 
-### 6.3 Verify Faces
+### 7.3 Verify Faces
 
 By using one reference image of a face, it is possible to detect the same face in a webcam stream 
 
