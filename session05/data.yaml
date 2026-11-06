@@ -1,5 +1,5 @@
-train: /Users/ferdi/Documents/ferdi/test/Valentines Chocolates.v4-fixed-annotations.yolov11/train/images
-val: /Users/ferdi/Documents/ferdi/test/Valentines Chocolates.v4-fixed-annotations.yolov11/val/images
+train: /path/to/train/images
+val: /path/to/val/images
 
 nc: 1
 names: ['person']
