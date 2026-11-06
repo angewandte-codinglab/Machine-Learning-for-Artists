@@ -12,7 +12,7 @@ Supplimentary Material to my course at the University of Applied Arts Vienna
 
 ## [Session 5](/session05/session05.md)
 
-<--
+<!--
 ## [Session 6](/session06/session06.md)
 -->
 
