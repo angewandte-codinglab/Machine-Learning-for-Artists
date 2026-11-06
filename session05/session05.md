@@ -399,7 +399,9 @@ cv2.destroyAllWindows()
 
 ## 3. Mediapipe
 
-Mediapipe is a framework by Google for real-time computer vision applications. It's good at looking at your body for use cases like **hand tracking, face mesh, pose estimation, object detection and holistic body tracking**. 
+Mediapipe is a framework by Google for real-time computer vision applications. It's good at looking at your body for use cases like **hand tracking, face mesh, pose estimation, object detection and holistic body tracking**.
+
+These examples use the Tasks API (`mediapipe.tasks`). Each detector is a separate task, and each task needs a small model file ending in `.task`. Put those files in the same folder as your script.
 
 ### 3.1 Setup
 
@@ -407,17 +409,24 @@ Mediapipe is a framework by Google for real-time computer vision applications. I
 
 2. Create a virtual environment
 
-3. Install mediapipe via pip
+3. Install mediapipe via pip. `scipy` is only needed later, for the blink example.
 
     ```bash
-    pip install mediapipe opencv-python numpy
+    pip install mediapipe opencv-python numpy scipy
+    ```
+
+4. Download the hand and face models into that folder.
+
+    ```bash
+    curl -L -o hand_landmarker.task https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task
+    curl -L -o face_landmarker.task https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task
     ```
 
 <br><br><br>
 
 ### 3.2 Simple Hand Tracking
 
-1. Import opencv and mediapipe and define webcam
+1. Import opencv and mediapipe, and open the webcam.
     ```python
     import cv2
     import mediapipe as mp
@@ -425,22 +434,37 @@ Mediapipe is a framework by Google for real-time computer vision applications. I
     cap = cv2.VideoCapture(0)
     ```
 
-2. Define what we want to use from mediapipe. We use `hands` and `drawing_utils`
+2. Pick the pieces we need from the Tasks API. `HAND_CONNECTIONS` is the list of lines between the 21 hand points. Each connection has a `start` and an `end` index. Current MediaPipe has no drawing helper, so this function draws those lines with OpenCV. Landmark positions are 0–1, so multiply by the frame size to get pixels.
     ```python
-    mp_hands = mp.solutions.hands
-    mp_drawing = mp.solutions.drawing_utils
+    BaseOptions = mp.tasks.BaseOptions
+    HandLandmarker = mp.tasks.vision.HandLandmarker
+    HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
+    VisionRunningMode = mp.tasks.vision.RunningMode
+    HAND_CONNECTIONS = mp.tasks.vision.HandLandmarksConnections.HAND_CONNECTIONS
+
+    def draw_landmarks(image, landmarks, connections):
+        height, width = image.shape[:2]
+        points = [(int(lm.x * width), int(lm.y * height)) for lm in landmarks]
+        for connection in connections:
+            cv2.line(image, points[connection.start], points[connection.end], (255, 255, 255), 2)
+        for point in points:
+            cv2.circle(image, point, 4, (0, 0, 255), -1)
     ```
 
-3. Setup the parameters for the hands detector
+3. Load `hand_landmarker.task` and set the detector to video mode. Video mode tracks the hand from frame to frame, so each call needs a timestamp that keeps going up. `num_hands` is how many hands to look for.
     ```python
-    hands = mp_hands.Hands(
-    max_num_hands=2,
-    min_detection_confidence=0.5,
-    min_tracking_confidence=0.5
-    )
+    hands = HandLandmarker.create_from_options(HandLandmarkerOptions(
+        base_options=BaseOptions(model_asset_path='hand_landmarker.task'),
+        running_mode=VisionRunningMode.VIDEO,
+        num_hands=2,
+        min_hand_detection_confidence=0.5,
+        min_hand_presence_confidence=0.5,
+        min_tracking_confidence=0.5,
+    ))
+    timestamp_ms = 0
     ```
 
-4. While functions when reading from webcam
+4. Read frames from the webcam.
     ```python
     while True:
         ret, frame = cap.read()
@@ -448,21 +472,23 @@ Mediapipe is a framework by Google for real-time computer vision applications. I
             break
     ```
 
-5. Flip the webcam image (in most cases necessary), read results
+5. Flip the image so it feels like a mirror. OpenCV frames are BGR, and MediaPipe wants RGB, so convert the frame and wrap it in an `mp.Image`. `detect_for_video` needs the timestamp from step 3. Then move the clock forward for the next frame.
     ```python
-    frame = cv2.flip(frame, 1)
-    results = hands.process(frame)
+        frame = cv2.flip(frame, 1)
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+        results = hands.detect_for_video(mp_image, timestamp_ms)
+        timestamp_ms += 33
     ```
 
-6. Read results and draw landmarks on the frame
+6. `results.hand_landmarks` is a list with one entry per hand. Each entry is the 21 points. Draw them on the original BGR frame.
     ```python
-    if results.multi_hand_landmarks:
-        for hand_landmarks in results.multi_hand_landmarks:
-            mp_drawing.draw_landmarks(
-                frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+        if results.hand_landmarks:
+            for hand_landmarks in results.hand_landmarks:
+                draw_landmarks(frame, hand_landmarks, HAND_CONNECTIONS)
     ```
 
-7. Show image and break functions
+7. Show the image, and quit when `q` is pressed.
     ```python
         cv2.imshow('Hands', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -481,26 +507,46 @@ Mediapipe is a framework by Google for real-time computer vision applications. I
 import cv2
 import mediapipe as mp
 
-mp_hands = mp.solutions.hands
-mp_drawing = mp.solutions.drawing_utils
+BaseOptions = mp.tasks.BaseOptions
+HandLandmarker = mp.tasks.vision.HandLandmarker
+HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
+VisionRunningMode = mp.tasks.vision.RunningMode
+HAND_CONNECTIONS = mp.tasks.vision.HandLandmarksConnections.HAND_CONNECTIONS
+
+def draw_landmarks(image, landmarks, connections):
+    height, width = image.shape[:2]
+    points = [(int(lm.x * width), int(lm.y * height)) for lm in landmarks]
+    for connection in connections:
+        cv2.line(image, points[connection.start], points[connection.end], (255, 255, 255), 2)
+    for point in points:
+        cv2.circle(image, point, 4, (0, 0, 255), -1)
 
 cap = cv2.VideoCapture(0)
-hands = mp_hands.Hands(
-    max_num_hands=2,
-    min_detection_confidence=0.5,
-    min_tracking_confidence=0.5
-)
+hands = HandLandmarker.create_from_options(HandLandmarkerOptions(
+    base_options=BaseOptions(model_asset_path='hand_landmarker.task'),
+    running_mode=VisionRunningMode.VIDEO,
+    num_hands=2,
+    min_hand_detection_confidence=0.5,
+    min_hand_presence_confidence=0.5,
+    min_tracking_confidence=0.5,
+))
+timestamp_ms = 0
 
 while True:
     ret, frame = cap.read()
     if not ret:
         break
+
     frame = cv2.flip(frame, 1)
-    results = hands.process(frame)
-    if results.multi_hand_landmarks:
-        for hand_landmarks in results.multi_hand_landmarks:
-            mp_drawing.draw_landmarks(
-                frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+    results = hands.detect_for_video(mp_image, timestamp_ms)
+    timestamp_ms += 33
+
+    if results.hand_landmarks:
+        for hand_landmarks in results.hand_landmarks:
+            draw_landmarks(frame, hand_landmarks, HAND_CONNECTIONS)
+
     cv2.imshow('Hands', frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
@@ -516,9 +562,9 @@ cv2.destroyAllWindows()
 
 ### 3.3 Hand Zoom Example
 
-We can calculate the distance between fingers with this code. Find out which landmarks the fingers have [here.](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker#models) The ends of pinky and thumb are 20 and 4. The `distance` parameter drives the zoom of the image here. 
+We can calculate the distance between fingers with this code. The 21 landmarks are listed [here.](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker) The tip of the thumb is point 4, the tip of the pinky is point 20. In the Tasks API each hand is a list, so those points are `hand_landmarks[4]` and `hand_landmarks[20]`. The `distance` drives the zoom of the image.
 
-1. Add Numpy to to the imports, we need it for the calculation of the distance.
+1. Add Numpy to the imports. We need it to measure the distance. The MediaPipe names are the same ones from the hand tracking example.
     ```python
     import cv2
     import mediapipe as mp
@@ -526,32 +572,47 @@ We can calculate the distance between fingers with this code. Find out which lan
 
     cap = cv2.VideoCapture(0)
 
-    mp_hands = mp.solutions.hands
-    mp_drawing = mp.solutions.drawing_utils
+    BaseOptions = mp.tasks.BaseOptions
+    HandLandmarker = mp.tasks.vision.HandLandmarker
+    HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
+    VisionRunningMode = mp.tasks.vision.RunningMode
+    HAND_CONNECTIONS = mp.tasks.vision.HandLandmarksConnections.HAND_CONNECTIONS
+
+    def draw_landmarks(image, landmarks, connections):
+        height, width = image.shape[:2]
+        points = [(int(lm.x * width), int(lm.y * height)) for lm in landmarks]
+        for connection in connections:
+            cv2.line(image, points[connection.start], points[connection.end], (255, 255, 255), 2)
+        for point in points:
+            cv2.circle(image, point, 4, (0, 0, 255), -1)
     ```
 
-2. Define a function that gets the position of the fingertips relative to the frame widht & height. `np.linalg.norm` is used to calculate the distance between points. The calculated value is the returned.
+2. This function reads the two fingertips and returns the distance between them in pixels. Landmark coordinates are 0–1, so multiply by the frame size to get pixels. `np.linalg.norm` is the length of the line between the two points.
     ```python
     def get_pinky_thumb_distance(hand_landmarks, frame_width, frame_height):
-    thumb_tip = hand_landmarks.landmark[4]
-    pinky_tip = hand_landmarks.landmark[20]
-    x1, y1 = int(thumb_tip.x * frame_width), int(thumb_tip.y * frame_height)
-    x2, y2 = int(pinky_tip.x * frame_width), int(pinky_tip.y * frame_height)
-    return np.linalg.norm([x2 - x1, y2 - y1])
-
-
-3. Call the mediapipe hands and add initial values for zoom and base_distance
-    ```python
-        hands = mp_hands.Hands(
-        max_num_hands=2,
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5
-    )
-    zoom = 1.0
-    base_distance = None
+        thumb_tip = hand_landmarks[4]
+        pinky_tip = hand_landmarks[20]
+        x1, y1 = int(thumb_tip.x * frame_width), int(thumb_tip.y * frame_height)
+        x2, y2 = int(pinky_tip.x * frame_width), int(pinky_tip.y * frame_height)
+        return np.linalg.norm([x2 - x1, y2 - y1])
     ```
 
-4. Read and flip frame, get results from detector
+3. Load the hand landmarker and set the starting zoom. `base_distance` is filled in on the first frame where a hand is visible, and later distances are compared to it.
+    ```python
+    hands = HandLandmarker.create_from_options(HandLandmarkerOptions(
+        base_options=BaseOptions(model_asset_path='hand_landmarker.task'),
+        running_mode=VisionRunningMode.VIDEO,
+        num_hands=2,
+        min_hand_detection_confidence=0.5,
+        min_hand_presence_confidence=0.5,
+        min_tracking_confidence=0.5,
+    ))
+    zoom = 1.0
+    base_distance = None
+    timestamp_ms = 0
+    ```
+
+4. Read and flip the frame, then run the detector. Same RGB conversion and rising timestamp as in the hand tracking example.
     ```python
     while cap.isOpened():
         success, frame = cap.read()
@@ -560,73 +621,76 @@ We can calculate the distance between fingers with this code. Find out which lan
             continue
 
         frame = cv2.flip(frame, 1)
-        results = hands.process(frame)
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+        results = hands.detect_for_video(mp_image, timestamp_ms)
+        timestamp_ms += 33
     ```
 
-5. Get dimemsion of the video frame
-   ```python
-   h, w = frame.shape[:2]
-   ```
-
-6. Check if there is output from the detector. If yes, then draw the connections on the frame using the `mp_drawing` function.
+5. Get the dimensions of the video frame.
     ```python
-    if results.multi_hand_landmarks:
-        hand_landmarks = results.multi_hand_landmarks[0]
-        mp_drawing.draw_landmarks(
-            frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+        h, w = frame.shape[:2]
     ```
 
-7. Call our function from before to calculate the distances between the fingers.
+6. If a hand was found, take the first one and draw its connections.
     ```python
-    distance = get_pinky_thumb_distance(hand_landmarks, w, h)
+        if results.hand_landmarks:
+            hand_landmarks = results.hand_landmarks[0]
+            draw_landmarks(frame, hand_landmarks, HAND_CONNECTIONS)
     ```
 
-8. Set the distance of the first calculation as base. Then divide distance with base distance. This defines our zoom value. Utilising the np.clip function we can specify min and max values.
+7. Call the function from step 2 to measure the distance between the fingertips.
     ```python
-    if base_distance is None:
-            base_distance = distance if distance > 0 else 1
-        
-    zoom = np.clip(distance / base_distance, 1.0, 3.0)
+            distance = get_pinky_thumb_distance(hand_landmarks, w, h)
     ```
 
-9. Draw a line between the fingers
+8. Store the first distance as the baseline. Dividing the current distance by that baseline gives the zoom. `np.clip` keeps it between 1× and 3×.
     ```python
-    thumb_tip = hand_landmarks.landmark[4]
-    pinky_tip = hand_landmarks.landmark[20]
-    pt1 = (int(thumb_tip.x * w), int(thumb_tip.y * h))
-    pt2 = (int(pinky_tip.x * w), int(pinky_tip.y * h))
-    cv2.line(frame, pt1, pt2, (0, 255, 255), 2)
-    cv2.putText(frame, f"Zoom: {zoom:.2f}x", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            if base_distance is None:
+                base_distance = distance if distance > 0 else 1
+
+            zoom = np.clip(distance / base_distance, 1.0, 3.0)
     ```
 
-10. Set zoom to 1.0 when no hands are detected
+9. Draw a line between the fingers and print the zoom value.
     ```python
-    else:
-    base_distance = None
-    zoom = 1.0
+            thumb_tip = hand_landmarks[4]
+            pinky_tip = hand_landmarks[20]
+            pt1 = (int(thumb_tip.x * w), int(thumb_tip.y * h))
+            pt2 = (int(pinky_tip.x * w), int(pinky_tip.y * h))
+            cv2.line(frame, pt1, pt2, (0, 255, 255), 2)
+            cv2.putText(frame, f"Zoom: {zoom:.2f}x", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     ```
 
-11. With the `zoom` value, set the zoom. We make sure this is only excecuted when the zoom is above 1.0. 
+10. When no hand is visible, forget the baseline and reset the zoom.
     ```python
-    if zoom > 1.0:
-        center_x, center_y = w // 2, h // 2 # Calculate the centerpoints of the frame
-        new_w, new_h = int(w / zoom), int(h / zoom) # Set new zoom (crop) levels for width and height
-        x1 = max(center_x - new_w // 2, 0)  # Calculate corner points for cropping
-        y1 = max(center_y - new_h // 2, 0)
-        x2 = min(center_x + new_w // 2, w)
-        y2 = min(center_y + new_h // 2, h)
-        cropped = frame[y1:y2, x1:x2] #Crop
-        frame = cv2.resize(cropped, (w, h))
+        else:
+            base_distance = None
+            zoom = 1.0
     ```
 
-12. Exit Functions
+11. Crop toward the center of the frame and scale that crop back to the full frame. This only runs when the zoom is above 1.
+    ```python
+        if zoom > 1.0:
+            center_x, center_y = w // 2, h // 2
+            new_w, new_h = int(w / zoom), int(h / zoom)
+            x1 = max(center_x - new_w // 2, 0)
+            y1 = max(center_y - new_h // 2, 0)
+            x2 = min(center_x + new_w // 2, w)
+            y2 = min(center_y + new_h // 2, h)
+            cropped = frame[y1:y2, x1:x2]
+            frame = cv2.resize(cropped, (w, h))
+    ```
+
+12. Show the image and quit when `q` is pressed.
     ```python
         cv2.imshow('MediaPipe Hands Zoom', frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):  
+        if cv2.waitKey(1) & 0xFF == ord('q'):
             break
- 
+
+    hands.close()
     cap.release()
-    cv2.destroyAllWindows()   
+    cv2.destroyAllWindows()
     ```
 
 <br>
@@ -641,24 +705,38 @@ import numpy as np
 
 cap = cv2.VideoCapture(0)
 
-mp_hands = mp.solutions.hands
-mp_drawing = mp.solutions.drawing_utils
+BaseOptions = mp.tasks.BaseOptions
+HandLandmarker = mp.tasks.vision.HandLandmarker
+HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
+VisionRunningMode = mp.tasks.vision.RunningMode
+HAND_CONNECTIONS = mp.tasks.vision.HandLandmarksConnections.HAND_CONNECTIONS
 
+def draw_landmarks(image, landmarks, connections):
+    height, width = image.shape[:2]
+    points = [(int(lm.x * width), int(lm.y * height)) for lm in landmarks]
+    for connection in connections:
+        cv2.line(image, points[connection.start], points[connection.end], (255, 255, 255), 2)
+    for point in points:
+        cv2.circle(image, point, 4, (0, 0, 255), -1)
 
 def get_pinky_thumb_distance(hand_landmarks, frame_width, frame_height):
-    thumb_tip = hand_landmarks.landmark[4]
-    pinky_tip = hand_landmarks.landmark[20]
+    thumb_tip = hand_landmarks[4]
+    pinky_tip = hand_landmarks[20]
     x1, y1 = int(thumb_tip.x * frame_width), int(thumb_tip.y * frame_height)
     x2, y2 = int(pinky_tip.x * frame_width), int(pinky_tip.y * frame_height)
     return np.linalg.norm([x2 - x1, y2 - y1])
 
-hands = mp_hands.Hands(
-    max_num_hands=2,
-    min_detection_confidence=0.5,
-    min_tracking_confidence=0.5
-)
+hands = HandLandmarker.create_from_options(HandLandmarkerOptions(
+    base_options=BaseOptions(model_asset_path='hand_landmarker.task'),
+    running_mode=VisionRunningMode.VIDEO,
+    num_hands=2,
+    min_hand_detection_confidence=0.5,
+    min_hand_presence_confidence=0.5,
+    min_tracking_confidence=0.5,
+))
 zoom = 1.0
 base_distance = None
+timestamp_ms = 0
 
 while cap.isOpened():
     success, frame = cap.read()
@@ -667,24 +745,25 @@ while cap.isOpened():
         continue
 
     frame = cv2.flip(frame, 1)
-    results = hands.process(frame)
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+    results = hands.detect_for_video(mp_image, timestamp_ms)
+    timestamp_ms += 33
 
     h, w = frame.shape[:2]
 
-    if results.multi_hand_landmarks:
-        hand_landmarks = results.multi_hand_landmarks[0]
-        mp_drawing.draw_landmarks(
-            frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+    if results.hand_landmarks:
+        hand_landmarks = results.hand_landmarks[0]
+        draw_landmarks(frame, hand_landmarks, HAND_CONNECTIONS)
 
         distance = get_pinky_thumb_distance(hand_landmarks, w, h)
         if base_distance is None:
             base_distance = distance if distance > 0 else 1
-        
+
         zoom = np.clip(distance / base_distance, 1.0, 3.0)
 
-        
-        thumb_tip = hand_landmarks.landmark[4]
-        pinky_tip = hand_landmarks.landmark[20]
+        thumb_tip = hand_landmarks[4]
+        pinky_tip = hand_landmarks[20]
         pt1 = (int(thumb_tip.x * w), int(thumb_tip.y * h))
         pt2 = (int(pinky_tip.x * w), int(pinky_tip.y * h))
         cv2.line(frame, pt1, pt2, (0, 255, 255), 2)
@@ -705,9 +784,10 @@ while cap.isOpened():
         frame = cv2.resize(cropped, (w, h))
 
     cv2.imshow('MediaPipe Hands Zoom', frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):  
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
+hands.close()
 cap.release()
 cv2.destroyAllWindows()
 ```
@@ -718,9 +798,9 @@ cv2.destroyAllWindows()
 
 ### 3.4 Blink Recognition
 
-Using the Face Mesh, we can find out if a person blinks. This works by finding out the distance of the eye landmarks and thus calculating the eye aspect ratio (EAR) with them. The landmarks for the face mesh can be found [here.](https://storage.googleapis.com/mediapipe-assets/documentation/mediapipe_face_landmark_fullsize.png)
+Using the Face Landmarker, we can find out if a person blinks. This works by measuring the eye landmarks and calculating the eye aspect ratio (EAR). The landmark map is [here.](https://storage.googleapis.com/mediapipe-assets/documentation/mediapipe_face_landmark_fullsize.png) The Tasks model uses the same point numbers as that map.
 
-1. Import libraries. One is new to us: `scipy` is used here to calculate euclidean distances. 
+1. Import libraries. `scipy` calculates the distances between eyelid points.
     ```python
     import cv2
     import numpy as np
@@ -728,13 +808,13 @@ Using the Face Mesh, we can find out if a person blinks. This works by finding o
     from scipy.spatial import distance
     ```
 
-2. From the landmarks we define the points for the eyes in an array.
+2. These are the six landmark numbers for each eye: two corners, two points on the upper lid, two on the lower lid.
     ```python
     LEFT_EYE = [33, 160, 158, 133, 153, 144]
     RIGHT_EYE = [362, 385, 387, 263, 373, 380]
     ```
 
-3. Eye Aspect Ratio Calculation (EAR). A and B: vertical distances between upper and lower eyelids. C: horizontal distance between corners of the eye. `ear` is high when eyes are open and drops when eyes close.
+3. Eye Aspect Ratio (EAR). A and B are the vertical distances between the upper and lower lids. C is the horizontal distance between the corners. `ear` is high when the eyes are open and drops when they close.
     ```python
     def eye_aspect_ratio(eye):
         A = distance.euclidean(eye[1], eye[5])
@@ -744,7 +824,7 @@ Using the Face Mesh, we can find out if a person blinks. This works by finding o
         return ear
     ```
 
-4. Set global variables. `EAR_THRESHOLD`: If EAR falls below this, the eye is likely closed. `CONSEC_FRAMES`: Blink is counted only if eye is closed for at least this many consecutive frames. 
+4. Set the blink counters. `EAR_THRESHOLD`: below this, the eye is treated as closed. `CONSEC_FRAMES`: a blink counts only if the eye stays closed for at least this many frames.
     ```python
     EAR_THRESHOLD = 0.25
     CONSEC_FRAMES = 2
@@ -752,72 +832,88 @@ Using the Face Mesh, we can find out if a person blinks. This works by finding o
     frame_counter = 0
     ```
 
-5. Mediapipe Face Mesh, Drawing and Webcam
+5. Load `face_landmarker.task` in video mode, and open the webcam. `num_faces` is how many faces to look for.
     ```python
-    mp_face_mesh = mp.solutions.face_mesh
-    face_mesh = mp_face_mesh.FaceMesh(static_image_mode=False, max_num_faces=1, min_detection_confidence=0.5)
-    mp_drawing = mp.solutions.drawing_utils
+    BaseOptions = mp.tasks.BaseOptions
+    FaceLandmarker = mp.tasks.vision.FaceLandmarker
+    FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
+    VisionRunningMode = mp.tasks.vision.RunningMode
+
+    face_landmarker = FaceLandmarker.create_from_options(FaceLandmarkerOptions(
+        base_options=BaseOptions(model_asset_path='face_landmarker.task'),
+        running_mode=VisionRunningMode.VIDEO,
+        num_faces=1,
+        min_face_detection_confidence=0.5,
+        min_face_presence_confidence=0.5,
+        min_tracking_confidence=0.5,
+    ))
 
     cap = cv2.VideoCapture(0)
+    timestamp_ms = 0
     ```
 
-6. Read frames from webcam, get frame dimensions
+6. Read a frame, convert it to RGB, and run the face landmarker. Then read the frame size.
     ```python
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
 
-        result = face_mesh.process(frame)
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+        result = face_landmarker.detect_for_video(mp_image, timestamp_ms)
+        timestamp_ms += 33
         h, w = frame.shape[:2]
     ```
 
-7. Get the facial landmarks of the first detected face.
+7. `result.face_landmarks` is a list with one entry per face. Each entry is the full list of face points. Take the first face.
     ```python
-    if result.multi_face_landmarks:
-        mesh_points = result.multi_face_landmarks[0].landmark
+        if result.face_landmarks:
+            mesh_points = result.face_landmarks[0]
     ```
 
-8. Convert normalized values into pixel values.
+8. Turn the six eye points from 0–1 coordinates into pixel positions.
     ```python
-    left_eye = [np.array([mesh_points[i].x * w, mesh_points[i].y * h]) for i in LEFT_EYE]
-    right_eye = [np.array([mesh_points[i].x * w, mesh_points[i].y * h]) for i in RIGHT_EYE]
+            left_eye = [np.array([mesh_points[i].x * w, mesh_points[i].y * h]) for i in LEFT_EYE]
+            right_eye = [np.array([mesh_points[i].x * w, mesh_points[i].y * h]) for i in RIGHT_EYE]
     ```
 
-9. Call our distance calculation function and get the average of both eyes.
+9. Measure both eyes and average them, so one eye blinking still moves the value.
     ```python
-    left_ear = eye_aspect_ratio(left_eye)
-    right_ear = eye_aspect_ratio(right_eye)
-    ear = (left_ear + right_ear) / 2.0
+            left_ear = eye_aspect_ratio(left_eye)
+            right_ear = eye_aspect_ratio(right_eye)
+            ear = (left_ear + right_ear) / 2.0
     ```
 
-10. Draw the points for each landmark
+10. Draw a dot on each of those eye landmarks.
     ```python
-    for pt in left_eye + right_eye:
-        cv2.circle(frame, tuple(np.int32(pt)), 2, (0, 255, 0), -1)
+            for pt in left_eye + right_eye:
+                cv2.circle(frame, tuple(np.int32(pt)), 2, (0, 255, 0), -1)
     ```
 
-11. If the EAR value is below the set `EAR_THRESHOLD` add to the frame counter. Counts a blink if the eye was closed for enough frames, then resets.
+11. While the EAR stays under the threshold, count frames. When the eye opens again, count one blink if it was closed long enough, then reset the counter.
     ```python
-    if ear < EAR_THRESHOLD:
-        frame_counter += 1
-    else:
-        if frame_counter >= CONSEC_FRAMES:
-            blink_count += 1
-        frame_counter = 0
-
-12. Draw info text
-    ```python
-    cv2.putText(frame, f"Blinks: {blink_count}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
-    cv2.putText(frame, f"EAR: {ear:.2f}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+            if ear < EAR_THRESHOLD:
+                frame_counter += 1
+            else:
+                if frame_counter >= CONSEC_FRAMES:
+                    blink_count += 1
+                frame_counter = 0
     ```
 
-13. Exit functions
+12. Draw the blink count and the current EAR on the frame.
+    ```python
+            cv2.putText(frame, f"Blinks: {blink_count}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+            cv2.putText(frame, f"EAR: {ear:.2f}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+    ```
+
+13. Show the image and quit when `q` is pressed.
     ```python
         cv2.imshow("Blink Detector", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
+    face_landmarker.close()
     cap.release()
     cv2.destroyAllWindows()
     ```
@@ -828,13 +924,10 @@ Using the Face Mesh, we can find out if a person blinks. This works by finding o
 <summary>Full Code</summary>
 
 ```python
-
 import cv2
 import numpy as np
 import mediapipe as mp
 from scipy.spatial import distance
-
-
 
 LEFT_EYE = [33, 160, 158, 133, 153, 144]
 RIGHT_EYE = [362, 385, 387, 263, 373, 380]
@@ -851,22 +944,36 @@ CONSEC_FRAMES = 2
 blink_count = 0
 frame_counter = 0
 
-mp_face_mesh = mp.solutions.face_mesh
-face_mesh = mp_face_mesh.FaceMesh(static_image_mode=False, max_num_faces=1, min_detection_confidence=0.5)
-mp_drawing = mp.solutions.drawing_utils
+BaseOptions = mp.tasks.BaseOptions
+FaceLandmarker = mp.tasks.vision.FaceLandmarker
+FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
+VisionRunningMode = mp.tasks.vision.RunningMode
+
+face_landmarker = FaceLandmarker.create_from_options(FaceLandmarkerOptions(
+    base_options=BaseOptions(model_asset_path='face_landmarker.task'),
+    running_mode=VisionRunningMode.VIDEO,
+    num_faces=1,
+    min_face_detection_confidence=0.5,
+    min_face_presence_confidence=0.5,
+    min_tracking_confidence=0.5,
+))
 
 cap = cv2.VideoCapture(0)
+timestamp_ms = 0
 
 while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
         break
 
-    result = face_mesh.process(frame)
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+    result = face_landmarker.detect_for_video(mp_image, timestamp_ms)
+    timestamp_ms += 33
     h, w = frame.shape[:2]
 
-    if result.multi_face_landmarks:
-        mesh_points = result.multi_face_landmarks[0].landmark
+    if result.face_landmarks:
+        mesh_points = result.face_landmarks[0]
         left_eye = [np.array([mesh_points[i].x * w, mesh_points[i].y * h]) for i in LEFT_EYE]
         right_eye = [np.array([mesh_points[i].x * w, mesh_points[i].y * h]) for i in RIGHT_EYE]
 
@@ -893,6 +1000,7 @@ while cap.isOpened():
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
+face_landmarker.close()
 cap.release()
 cv2.destroyAllWindows()
 ```
